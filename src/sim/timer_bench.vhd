@@ -45,7 +45,7 @@ architecture Behavioral of timer_bench is
 
 begin
 sim_timer: 
-        entity work.timer(Behavioral)
+        entity work.timer(Behavioral)      
         port map(
                   board_clock => sim_bclock,
                   reset => sim_reset,
@@ -57,23 +57,16 @@ sim_timer:
 sim_clock_p:
         process is
         begin
-            sim_bclock <= '1';
-            wait for 8ns;
+            wait for 500ns;
             sim_bclock <= '0';
-            wait for 8ns;
+            wait for 500ns;
+            sim_bclock <= '1';
             
         end process sim_clock_p;
 sim_proc:
         process is
         begin
-             sim_start <= '1';
-             wait for 1000 ns;
-             sim_sel <= '1';
-             wait for 5000 ns;
-             sim_reset <= '1';
-             wait for 100 ns;
-             
-             wait;
+             -- here the process.
               
         end process sim_proc;
 

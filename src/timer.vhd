@@ -45,9 +45,15 @@ architecture Behavioral of timer is
     signal clock_1hz: std_logic := '0';
     signal is_running: std_logic := '0';
     
+    signal start_1: std_logic := '0';
+    signal start_2: std_logic := '0';
+    signal start_pulse: std_logic := '0';
+    
+    signal min: unsigned(5 downto 0) := (others => '0');
+    signal sec: unsigned(5 downto 0) := (others => '0');
+    
 begin
 
--- To test simulation connect board clock directly to the clock_1hz.
 freq_div_unit: 
         entity work.freq_div(Behavioral) 
         generic map(CLK_INPUT  => 125000000,        
@@ -56,53 +62,61 @@ freq_div_unit:
                  clk_out => clock_1hz);
 
 start_stop: 
-      process (start) is
+      process(clock_1hz) is
       begin
-            if start = '1'
-            then
-                is_running <= not is_running;
-            end if;
+           if rising_edge(clock_1hz)
+           then
+                start_1 <= start;
+                start_2 <= start_1;
+           end if;           
       end process start_stop;
-
+      start_pulse <= start_1 and (not start_2);
+      
+change_state:
+       process(clock_1hz) is
+       begin
+            if rising_edge(clock_1hz)
+            then
+                if start_pulse = '1'
+                then    
+                    is_running <= not is_running;
+                end if;
+            end if;
+       end process change_state;
+   
 timer_proc: 
       process (clock_1hz, reset) is 
     
-        variable min: unsigned(5 downto 0) := (others => '0');
-        variable sec: unsigned(5 downto 0) := (others => '0');
-    
-      begin
-      
-        if is_running = '1'
-        then
+      begin 
             if reset = '1'
             then
-                min := (others => '0');
-                sec := (others => '0');
+                sec <= (others => '0');
+                min <= (others => '0');
             elsif rising_edge(clock_1hz)
             then
-                if sec = 59
+                if is_running = '1'
                 then
-                    sec := (others => '0');
-                    if min = 59
+                    if sec = 59
                     then
-                        min := (others => '0');
+                        sec <= (others => '0');
+                        if min = 59
+                        then
+                            min <= (others => '0');
+                        else
+                            min <= min + 1;
+                        end if;
                     else
-                        min := min + 1;
+                        sec <= sec + 1;
                     end if;
                 else
-                    sec := sec + 1;
+                    sec <= sec;
+                    min <= min;
                 end if;
-                
             end if;
-         end if;
-      
-         if sel = '0'
-         then
-            output <= std_logic_vector(sec);
-         else
-            output <= std_logic_vector(min);
-         end if;
-         
+            
       end process timer_proc;
+
+      output <= std_logic_vector(sec) when sel = '0'
+                else std_logic_vector(min);
 
 end Behavioral;
